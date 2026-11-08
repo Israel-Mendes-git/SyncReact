@@ -1,0 +1,12 @@
+{
+  "name": "syncreact",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "icons": "node tools/gen-icons.mjs",
+    "test": "node tools/test-sync.mjs"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.65.0"
+  }
+}
