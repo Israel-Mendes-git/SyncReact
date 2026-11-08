@@ -1,5 +1,8 @@
 // Teste de ponta a ponta: Chromium sem janela + extensão + duas abas do YouTube na mesma sala.
-// Uso: node tools/test-sync.mjs        (variável CHROMIUM aponta outro executável, se precisar)
+// Uso:
+//   node tools/test-sync.mjs                              transporte local (duas janelas, um perfil)
+//   SERVER=ws://127.0.0.1:8787 node tools/test-sync.mjs   pelo servidor (dois navegadores separados)
+// A variável CHROMIUM aponta outro executável, se precisar.
 import { chromium } from 'playwright-core';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir, homedir } from 'node:os';
@@ -10,12 +13,14 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = path.join(ROOT, 'tools', 'out');
 const EXE = process.env.CHROMIUM ||
   path.join(homedir(), 'AppData/Local/ms-playwright/chromium-1243/chrome-win64/chrome.exe');
+const SERVER = process.env.SERVER || '';
 const VIDEO_A = 'aqz-KE-bpKQ'; // Big Buck Bunny (Blender, CC)
 const VIDEO_B = 'eRsGyueVLvQ'; // Sintel (Blender, CC)
 
 mkdirSync(OUT, { recursive: true });
-const profile = path.join(tmpdir(), 'syncreact-test-' + Date.now());
 const results = [];
+const profiles = [];
+const contexts = [];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const log = (...a) => console.log(new Date().toISOString().slice(11, 23), ...a);
 
@@ -37,29 +42,37 @@ async function check(name, ok, detail) {
   }
 }
 
-const ctx = await chromium.launchPersistentContext(profile, {
-  executablePath: EXE,
-  headless: true,
-  viewport: { width: 1280, height: 720 },
-  args: [
-    `--disable-extensions-except=${ROOT}`,
-    `--load-extension=${ROOT}`,
-    '--mute-audio',
-    '--autoplay-policy=no-user-gesture-required',
-    '--disable-background-timer-throttling',
-    '--disable-renderer-backgrounding',
-    '--disable-backgrounding-occluded-windows',
-    '--disable-background-media-suspend',
-    '--lang=pt-BR',
-  ],
-});
+async function launch(label) {
+  const dir = path.join(tmpdir(), `syncreact-test-${label}-${Date.now()}`);
+  profiles.push(dir);
+  const ctx = await chromium.launchPersistentContext(dir, {
+    executablePath: EXE,
+    headless: true,
+    viewport: { width: 1280, height: 720 },
+    args: [
+      `--disable-extensions-except=${ROOT}`,
+      `--load-extension=${ROOT}`,
+      '--mute-audio',
+      '--autoplay-policy=no-user-gesture-required',
+      '--disable-background-timer-throttling',
+      '--disable-renderer-backgrounding',
+      '--disable-backgrounding-occluded-windows',
+      '--disable-background-media-suspend',
+      '--lang=pt-BR',
+    ],
+  });
+  contexts.push(ctx);
+  const sw = ctx.serviceWorkers()[0] || (await ctx.waitForEvent('serviceworker', { timeout: 15000 }));
+  return { ctx, sw };
+}
 
 try {
-  let sw = ctx.serviceWorkers()[0] || (await ctx.waitForEvent('serviceworker', { timeout: 15000 }));
-  const extId = new URL(sw.url()).host;
-  log('extensão carregada', extId);
+  const A = await launch('a');
+  const B = SERVER ? await launch('b') : A;
+  const extId = new URL(A.sw.url()).host;
+  log('extensão carregada', extId, SERVER ? '· servidor ' + SERVER + ' · dois navegadores' : '· transporte local');
 
-  async function openVideo(id) {
+  async function openVideo(ctx, id) {
     const page = await ctx.newPage();
     await page.goto('https://www.youtube.com/watch?v=' + id, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('video.html5-main-video', { timeout: 30000 });
@@ -99,14 +112,18 @@ try {
     return false;
   }
 
-  const pageA = await openVideo(VIDEO_A);
-  // B em outra janela, para as duas abas ficarem visíveis como em dois PCs
-  const pageBPromise = ctx.waitForEvent('page');
-  await sw.evaluate((url) => chrome.windows.create({ url, focused: false, width: 1280, height: 720 }),
-    'https://www.youtube.com/watch?v=' + VIDEO_A);
-  const pageB = await pageBPromise;
-  await pageB.waitForSelector('video.html5-main-video', { timeout: 30000 });
-  log('visibilidade', await pageA.evaluate(() => document.visibilityState), await pageB.evaluate(() => document.visibilityState));
+  const pageA = await openVideo(A.ctx, VIDEO_A);
+  let pageB;
+  if (SERVER) {
+    pageB = await openVideo(B.ctx, VIDEO_A);
+  } else {
+    // B em outra janela, para as duas abas ficarem visíveis como em dois PCs
+    const pageBPromise = A.ctx.waitForEvent('page');
+    await A.sw.evaluate((url) => chrome.windows.create({ url, focused: false, width: 1280, height: 720 }),
+      'https://www.youtube.com/watch?v=' + VIDEO_A);
+    pageB = await pageBPromise;
+    await pageB.waitForSelector('video.html5-main-video', { timeout: 30000 });
+  }
   pagesForDebug = [['A', pageA], ['B', pageB]];
   await Promise.all([waitNoAd(pageA, 'A'), waitNoAd(pageB, 'B')]);
 
@@ -116,14 +133,31 @@ try {
   await pageB.evaluate(() => { const p = document.querySelector('#movie_player'); p.pauseVideo(); p.seekTo(95, true); });
   await sleep(2000);
 
-  const tabs = await sw.evaluate(() => chrome.tabs.query({ url: 'https://www.youtube.com/*' }).then((t) => t.map((x) => x.id)));
-  const [tabA, tabB] = tabs;
-  log('abas', tabs);
-  await sw.evaluate(() => chrome.storage.local.set({ name: 'Teste' }));
-  await sw.evaluate((id) => self.syncreact.join(id, 'TESTE1'), tabA);
+  const tabsOf = (w) => w.evaluate(() => chrome.tabs.query({ url: 'https://www.youtube.com/*' }).then((t) => t.map((x) => x.id)));
+  const tabsA = await tabsOf(A.sw);
+  const tabA = tabsA[0];
+  const tabB = SERVER ? (await tabsOf(B.sw))[0] : tabsA[1];
+  log('abas', tabA, tabB);
+  const room = SERVER ? 'T' + Math.random().toString(36).slice(2, 7).toUpperCase() : 'TESTE1';
+  if (SERVER) {
+    await A.sw.evaluate((srv) => chrome.storage.local.set({ name: 'Ana', server: srv }), SERVER);
+    await B.sw.evaluate((srv) => chrome.storage.local.set({ name: 'Beto', server: srv }), SERVER);
+  } else {
+    await A.sw.evaluate(() => chrome.storage.local.set({ name: 'Teste', server: 'local' }));
+  }
+  await A.sw.evaluate(([id, r]) => self.syncreact.join(id, r), [tabA, room]);
   await sleep(2500); // A fica sozinha e inaugura a sala
-  await sw.evaluate((id) => self.syncreact.join(id, 'TESTE1'), tabB);
+  await B.sw.evaluate(([id, r]) => self.syncreact.join(id, r), [tabB, room]);
   await sleep(2500);
+
+  const netOf = async (w) => Object.values(await w.evaluate(() => self.syncreact.net()))[0] || null;
+  if (SERVER) {
+    const a = await netOf(A.sw);
+    const b = await netOf(B.sw);
+    await check('os dois conectados ao servidor, relógio acertado',
+      a && b && a.status === 'open' && b.status === 'open' && Math.abs(a.offset) < 50 && Math.abs(b.offset) < 50,
+      `A=${JSON.stringify(a)} B=${JSON.stringify(b)}`);
+  }
 
   // espera a condição valer em `stable` amostras seguidas; devolve quanto tempo levou
   async function settle(cond, { timeout = 10000, stable = 3 } = {}) {
@@ -186,7 +220,7 @@ try {
   await check('pause em B pausa A', r.ok, fmt(r));
 
   // play com contagem a partir do popup de A
-  await sw.evaluate((id) => self.syncreact.countdown(id), tabA);
+  await A.sw.evaluate((id) => self.syncreact.countdown(id), tabA);
   await sleep(1200);
   await pageB.screenshot({ path: path.join(OUT, 'b-contagem.png') });
   const mid = await diffMs(pageA, pageB);
@@ -206,6 +240,20 @@ try {
   await pageB.evaluate(() => document.querySelector('#movie_player').classList.remove('ad-showing'));
   r = await settle(synced, { timeout: 15000 });
   await check('fim do anúncio: os dois retomam juntos', r.ok && Math.abs(r.last.a.pos - held.pos) < 15, fmt(r));
+
+  if (SERVER) {
+    // queda de conexão de B: enquanto B reconecta, A pausa; ao voltar, B recebe o estado e pausa também
+    await B.sw.evaluate((id) => self.syncreact.dropSocket(id), tabB);
+    await pageA.locator('#movie_player').focus();
+    await pageA.keyboard.press('k');
+    r = await settle(bothPaused, { timeout: 8000 });
+    const nb = await netOf(B.sw);
+    await check('queda de conexão: B reconecta e pega o pause de A', r.ok && nb && nb.status === 'open',
+      fmt(r) + ' · net B=' + JSON.stringify(nb));
+    await pageA.keyboard.press('k');
+    r = await settle(synced, { timeout: 8000 });
+    await check('depois da reconexão, play sincroniza', r.ok, fmt(r));
+  }
 
   // troca de vídeo em A (abrindo a URL): B segue
   await pageA.goto('https://www.youtube.com/watch?v=' + VIDEO_B, { waitUntil: 'domcontentloaded' });
@@ -227,8 +275,8 @@ try {
   }
 
   // popup como página, apontando para a aba A
-  const popup = await ctx.newPage();
-  await popup.setViewportSize({ width: 300, height: 420 });
+  const popup = await A.ctx.newPage();
+  await popup.setViewportSize({ width: 300, height: 440 });
   await popup.goto(`chrome-extension://${extId}/popup/popup.html?tab=${tabA}`);
   await sleep(1500);
   await popup.screenshot({ path: path.join(OUT, 'popup.png') });
@@ -236,8 +284,8 @@ try {
 } catch (err) {
   await check('execução sem erro', false, err.stack || String(err));
 } finally {
-  await ctx.close();
-  rmSync(profile, { recursive: true, force: true });
+  for (const c of contexts) await c.close().catch(() => {});
+  for (const dir of profiles) rmSync(dir, { recursive: true, force: true });
   const fails = results.filter((r) => !r.ok).length;
   log(`${results.length - fails}/${results.length} passaram`);
   process.exit(fails ? 1 : 0);
