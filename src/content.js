@@ -183,7 +183,7 @@
 
   function acceptState(s) {
     if (state && (s.ts < state.ts || (s.ts === state.ts && s.by <= state.by))) return;
-    D('accept', JSON.stringify({ p: s.playing, f: s.frozen, pos: +s.position.toFixed(3), in: s.at - now(), v: s.videoId }));
+    D('accept', JSON.stringify({ p: s.playing, f: s.frozen, pos: +s.position.toFixed(3), in: s.at - now(), transit: now() - s.ts, v: s.videoId }));
     state = s;
     onStateChanged();
   }
@@ -254,19 +254,22 @@
 
   function setMyHold(reason) {
     if (reason === myHold) return;
-    if (reason && !myHold && state && state.playing && !state.frozen && state.videoId === currentVideoId()) {
+    const freeze = reason && !myHold && state && state.playing && !state.frozen && state.videoId === currentVideoId();
+    D('hold', reason);
+    myHold = reason;
+    holdSince = Date.now();
+    if (reason) holds[myId()] = { reason, name: myName() };
+    else delete holds[myId()];
+    // o aviso de "estou segurando" sai ANTES do congelamento: quem recebe o congelamento
+    // já sabe que tem alguém segurando e não manda retomar na hora
+    sendReport();
+    if (freeze) {
       // congela a sala. Se o motivo é carregamento, congela onde ESTA aba está: os outros
       // voltam um pouco para um trecho que já têm, e esta não precisa pular para um trecho sem dados.
       let pos = expectedPos(state, now());
       if (reason === 'buffering' && video) pos = Math.min(pos, video.currentTime);
       issueState({ frozen: true, position: pos, at: now() });
     }
-    D('hold', reason);
-    myHold = reason;
-    holdSince = Date.now();
-    if (reason) holds[myId()] = { reason, name: myName() };
-    else delete holds[myId()];
-    sendReport();
   }
 
   // ------------------------------------------------------------------ laço principal
