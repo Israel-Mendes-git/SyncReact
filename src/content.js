@@ -16,8 +16,9 @@
 
   // ------------------------------------------------------------------ ajustes
   const TICK_MS = 250;
-  const REPORT_MS = 1000;
-  const PEER_TIMEOUT_MS = 4500;
+  const REPORT_MS = 1000;        // tocando ou com alguém esperando
+  const REPORT_IDLE_MS = 3000;   // sala parada: menos mensagens (poupa a cota do servidor)
+  const PEER_TIMEOUT_MS = 10000;
   const SEEK_THRESHOLD = 0.8;   // s: diferença acima disso → pula direto
   const DRIFT_START = 0.05;     // s: começa a corrigir pela velocidade
   const DRIFT_STOP = 0.02;      // s: para de corrigir
@@ -70,6 +71,7 @@
   let followingTo = null;
   let autoplayBlocked = false;
   let lastPeerDiffMs = null;
+  let lastReportAt = 0;
   const intervals = [];
 
   const now = () => Date.now() + clockOffset;
@@ -542,6 +544,7 @@
       hold: myHold,
       ad: isAd(),
     });
+    lastReportAt = Date.now();
     post({ type: 'status', status: buildStatus() });
   }
 
@@ -786,7 +789,10 @@
 
   connect();
   intervals.push(setInterval(tick, TICK_MS));
-  intervals.push(setInterval(sendReport, REPORT_MS));
+  intervals.push(setInterval(() => {
+    const busy = (state && state.playing) || anyHold();
+    if (Date.now() - lastReportAt >= (busy ? REPORT_MS : REPORT_IDLE_MS)) sendReport();
+  }, 250));
   tick();
 
   // usado pelos testes automatizados
