@@ -91,3 +91,7 @@ O teste usa o Chromium do Playwright em `%LOCALAPPDATA%\ms-playwright\chromium-1
 - `server/`: o Worker da Cloudflare.
 - `popup/`: janela do ícone.
 - `tools/gen-icons.mjs`: gera os ícones; `tools/test-sync.mjs`: teste de ponta a ponta.
+
+## Contribuir
+
+Os commits seguem Conventional Commits em português. Veja o [CONTRIBUTING.md](CONTRIBUTING.md).

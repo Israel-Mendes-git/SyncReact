@@ -1,0 +1,32 @@
+#!/bin/sh
+# Valida a mensagem de commit no padrão do projeto (ver CONTRIBUTING.md).
+msg_file="$1"
+first=$(grep -v '^#' "$msg_file" | head -n 1)
+
+case "$first" in
+  "Merge "*|"Revert \""*|"fixup! "*|"squash! "*|"amend! "*) exit 0 ;;
+esac
+
+fail() {
+  echo "commit recusado: $1" >&2
+  echo "  título: \"$first\"" >&2
+  echo "  formato: tipo(escopo opcional): resumo   ex.: fix(extensao): corrige pulo depois do anúncio" >&2
+  echo "  tipos: feat fix refactor perf test docs style chore build ci revert (ver CONTRIBUTING.md)" >&2
+  exit 1
+}
+
+types='feat|fix|refactor|perf|test|docs|style|chore|build|ci|revert'
+printf '%s\n' "$first" | grep -Eq "^($types)(\([a-z0-9-]+\))?!?: [^ ]" \
+  || fail "o título não segue tipo(escopo): resumo"
+
+case "$first" in
+  *.) fail "o título não leva ponto final" ;;
+esac
+
+len=$(printf '%s' "$first" | LC_ALL=C.UTF-8 wc -m | tr -d ' ')
+[ "$len" -le 72 ] || fail "o título tem $len caracteres; o limite é 72"
+
+second=$(grep -v '^#' "$msg_file" | sed -n 2p)
+[ -z "$second" ] || fail "deixe a segunda linha em branco antes do corpo"
+
+exit 0
