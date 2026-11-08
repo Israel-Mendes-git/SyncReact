@@ -20,8 +20,8 @@
   const REPORT_IDLE_MS = 3000;   // sala parada: menos mensagens (poupa a cota do servidor)
   const PEER_TIMEOUT_MS = 10000;
   const SEEK_THRESHOLD = 0.8;   // s: diferença acima disso → pula direto
-  const DRIFT_START = 0.05;     // s: começa a corrigir pela velocidade
-  const DRIFT_STOP = 0.02;      // s: para de corrigir
+  const DRIFT_START = 0.03;     // s: começa a corrigir pela velocidade (entre duas pessoas, até ~2x isso)
+  const DRIFT_STOP = 0.01;      // s: para de corrigir
   const DRIFT_GAIN = 0.8;       // ajuste de velocidade por segundo de diferença
   const MAX_RATE_ADJ = 0.08;    // no máximo ±8% de velocidade
   const RESUME_LEAD_MS = 700;   // retomada depois de espera é agendada com essa folga
