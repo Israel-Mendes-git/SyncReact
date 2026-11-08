@@ -161,6 +161,9 @@ setInterval(() => {
   wallMinusMono = d;
 }, 1000);
 
+// Aba que saiu do YouTube (ou fechou o content script) por mais de 1 min sai da sala
+const leaveTimers = new Map();
+
 function netNotify(tabId, conn) {
   toPort(tabId, { type: 'net', status: conn.status });
 }
@@ -269,6 +272,8 @@ chrome.runtime.onConnect.addListener(async (port) => {
     return;
   }
   ports.set(tabId, port);
+  clearTimeout(leaveTimers.get(tabId));
+  leaveTimers.delete(tabId);
   port.onMessage.addListener((msg) => {
     if (msg.type === 'room') {
       send(tabId, msg.msg);
@@ -280,7 +285,14 @@ chrome.runtime.onConnect.addListener(async (port) => {
     }
   });
   port.onDisconnect.addListener(() => {
-    if (ports.get(tabId) === port) ports.delete(tabId);
+    if (ports.get(tabId) !== port) return;
+    ports.delete(tabId);
+    if (members[tabId]) {
+      leaveTimers.set(tabId, setTimeout(() => {
+        leaveTimers.delete(tabId);
+        if (!ports.has(tabId)) leave(tabId);
+      }, 60000));
+    }
   });
   ensureTransport(tabId);
   sendMembership(tabId);
