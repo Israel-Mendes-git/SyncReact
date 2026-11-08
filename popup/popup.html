@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <img src="../icons/icon32.png" alt="">
+    <h1>SyncReact</h1>
+    <span id="mode" class="tag">teste local</span>
+  </header>
+
+  <section id="not-youtube" hidden>
+    <p>Abra um vídeo do YouTube nesta aba para usar a sala.</p>
+  </section>
+
+  <section id="main" hidden>
+    <label class="field">
+      <span>Seu nome</span>
+      <input id="name" maxlength="20" placeholder="Como seu amigo vai te ver">
+    </label>
+
+    <div id="lobby">
+      <button id="create" class="primary">Criar sala</button>
+      <div class="row">
+        <input id="code" maxlength="6" placeholder="Código da sala" autocomplete="off">
+        <button id="join">Entrar</button>
+      </div>
+    </div>
+
+    <div id="room" hidden>
+      <div class="room-code">
+        <span>Sala</span>
+        <strong id="room-code"></strong>
+        <button id="copy" class="small">Copiar</button>
+      </div>
+      <ul id="peers"></ul>
+      <button id="countdown" class="primary">▶ Play com contagem (3 s)</button>
+      <button id="leave" class="ghost">Sair da sala</button>
+    </div>
+
+    <details>
+      <summary>Ajustes</summary>
+      <label class="check"><input type="checkbox" id="autoFollow"> Seguir quando o outro trocar de vídeo</label>
+      <label class="check"><input type="checkbox" id="overlay"> Mostrar status em cima do vídeo</label>
+      <label class="field">
+        <span>Compensar atraso da call: <b id="offset-label">0 ms</b></span>
+        <input type="range" id="offsetMs" min="-400" max="400" step="10">
+        <small>Positivo deixa o seu vídeo adiantado. Use se a sua reação chega atrasada para o outro.</small>
+      </label>
+    </details>
+  </section>
+
+  <script src="popup.js"></script>
+</body>
+</html>

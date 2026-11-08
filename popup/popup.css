@@ -1,0 +1,60 @@
+* { box-sizing: border-box; }
+body {
+  width: 300px;
+  margin: 0;
+  padding: 12px 14px 14px;
+  font: 13px/1.4 system-ui, "Segoe UI", Roboto, sans-serif;
+  background: #16161d;
+  color: #ececf1;
+}
+header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+header img { width: 22px; height: 22px; }
+h1 { font-size: 16px; margin: 0; flex: 1; }
+.tag { font-size: 11px; padding: 1px 8px; border-radius: 9px; background: #2d2d3a; color: #b6b6c8; }
+p { margin: 4px 0; color: #b6b6c8; }
+
+.field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+.field span { color: #b6b6c8; font-size: 12px; }
+.field small { color: #8a8a9c; font-size: 11px; }
+.check { display: flex; gap: 6px; align-items: center; margin: 6px 0; }
+
+input:not([type]), input[type="text"] {
+  width: 100%;
+  padding: 7px 9px;
+  border-radius: 8px;
+  border: 1px solid #34344a;
+  background: #0f0f14;
+  color: inherit;
+  font: inherit;
+}
+#code { text-transform: uppercase; letter-spacing: 2px; }
+input[type="range"] { width: 100%; }
+
+button {
+  font: inherit;
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1px solid #34344a;
+  background: #24243a;
+  color: inherit;
+  cursor: pointer;
+}
+button:hover { background: #2f2f4a; }
+button.primary { width: 100%; border: 0; background: #e5484d; color: #fff; font-weight: 600; margin-bottom: 8px; }
+button.primary:hover { background: #ef5f63; }
+button.ghost { width: 100%; background: transparent; }
+button.small { padding: 2px 8px; font-size: 12px; }
+.row { display: flex; gap: 6px; }
+
+.room-code { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.room-code span { color: #b6b6c8; }
+.room-code strong { font-size: 20px; letter-spacing: 3px; flex: 1; }
+
+#peers { list-style: none; padding: 0; margin: 0 0 10px; }
+#peers li { display: flex; gap: 8px; align-items: center; padding: 5px 0; border-top: 1px solid #26263a; }
+#peers .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+#peers .who { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#peers .info { color: #b6b6c8; font-size: 12px; white-space: nowrap; }
+
+details { margin-top: 10px; border-top: 1px solid #26263a; padding-top: 8px; }
+summary { cursor: pointer; color: #b6b6c8; margin-bottom: 6px; }
