@@ -35,6 +35,7 @@
         <strong id="room-code"></strong>
         <button id="copy" class="small">Copiar</button>
       </div>
+      <div id="net" class="net"></div>
       <ul id="peers"></ul>
       <button id="countdown" class="primary">▶ Play com contagem (3 s)</button>
       <button id="leave" class="ghost">Sair da sala</button>
@@ -48,6 +49,11 @@
         <span>Compensar atraso da call: <b id="offset-label">0 ms</b></span>
         <input type="range" id="offsetMs" min="-400" max="400" step="10">
         <small>Positivo deixa o seu vídeo adiantado. Use se a sua reação chega atrasada para o outro.</small>
+      </label>
+      <label class="field">
+        <span>Servidor</span>
+        <input id="server" placeholder="padrão" spellcheck="false">
+        <small>Vazio usa o servidor padrão. <code>local</code> sincroniza só abas deste navegador (teste). Vale para a próxima sala que você criar ou entrar.</small>
       </label>
     </details>
   </section>

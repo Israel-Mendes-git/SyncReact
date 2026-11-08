@@ -56,5 +56,9 @@ button.small { padding: 2px 8px; font-size: 12px; }
 #peers .who { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #peers .info { color: #b6b6c8; font-size: 12px; white-space: nowrap; }
 
+.net { font-size: 12px; color: #b6b6c8; margin: -2px 0 8px; display: flex; align-items: center; gap: 6px; }
+.net::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--c, #9aa0a6); }
+code { background: #2d2d3a; padding: 0 4px; border-radius: 4px; }
+
 details { margin-top: 10px; border-top: 1px solid #26263a; padding-top: 8px; }
 summary { cursor: pointer; color: #b6b6c8; margin-bottom: 6px; }

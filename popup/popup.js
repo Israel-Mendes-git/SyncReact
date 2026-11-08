@@ -3,7 +3,7 @@
 const $ = (id) => document.getElementById(id);
 let tabId = null;
 
-const DEFAULTS = { name: '', autoFollow: true, offsetMs: 0, overlay: true };
+const DEFAULTS = { name: '', autoFollow: true, offsetMs: 0, overlay: true, server: '' };
 const HOLD_LABEL = { ad: 'anúncio', buffering: 'carregando' };
 
 function ask(cmd, extra) {
@@ -29,6 +29,8 @@ async function init() {
   $('autoFollow').checked = s.autoFollow;
   $('overlay').checked = s.overlay;
   $('offsetMs').value = s.offsetMs;
+  $('server').value = s.server;
+  $('server').addEventListener('change', () => chrome.storage.local.set({ server: $('server').value.trim() }));
   showOffset(s.offsetMs);
 
   $('name').addEventListener('input', () => chrome.storage.local.set({ name: $('name').value.trim() }));
@@ -81,12 +83,25 @@ function showOffset(v) {
 async function refresh() {
   const r = await ask('status');
   if (!r) return;
-  $('mode').textContent = r.transport === 'local' ? 'teste local' : r.transport;
+  const mode = r.member ? r.member.server : r.server;
+  $('mode').textContent = mode === 'local' ? 'teste local' : 'online';
+  if (!$('server').value && document.activeElement !== $('server')) $('server').placeholder = r.defaultServer || 'local';
   const inRoom = !!r.member;
   $('lobby').hidden = inRoom;
   $('room').hidden = !inRoom;
   if (!inRoom) return;
   $('room-code').textContent = r.member.room;
+  const net = $('net');
+  if (r.member.server === 'local') {
+    net.textContent = 'Só abas deste navegador (teste local)';
+    net.style.setProperty('--c', '#9aa0a6');
+  } else if (r.net && r.net.status === 'open') {
+    net.textContent = 'Conectado ao servidor' + (r.net.rtt != null ? ' · ping ' + r.net.rtt + ' ms' : '');
+    net.style.setProperty('--c', '#34a853');
+  } else {
+    net.textContent = r.net && r.net.status === 'connecting' ? 'Conectando ao servidor…' : 'Sem conexão · tentando de novo';
+    net.style.setProperty('--c', '#ea4335');
+  }
 
   const st = r.status;
   const ul = $('peers');
