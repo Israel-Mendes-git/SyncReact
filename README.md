@@ -37,13 +37,13 @@ O status aparece no canto do player: verde quando está sincronizado, amarelo qu
 
 ## Mandar para o amigo
 
-O arquivo `SyncReact-extensao.zip` traz só o que a extensão precisa: `manifest.json`, `src/`, `popup/` e `icons/`. Ele descompacta numa pasta fixa (a extensão para de funcionar se a pasta for apagada) e instala igual: `opera://extensions` → Modo de desenvolvedor → Carregar sem compactação.
+O arquivo `SyncReact-extensao.zip` traz só o que a extensão precisa: `manifest.json`, `src/` (com o `config.js` preenchido), `popup/` e `icons/`. Ele descompacta numa pasta fixa (a extensão para de funcionar se a pasta for apagada) e instala igual: `opera://extensions` → Modo de desenvolvedor → Carregar sem compactação.
 
 Para gerar o zip de novo depois de mudanças, compacte essas quatro coisas dentro de uma pasta `SyncReact`.
 
 ## Servidor
 
-Coloque o endereço do seu Worker em `DEFAULT_SERVER` no `src/background.js`.
+O endereço do servidor publicado fica em `src/config.js`, que não vai para o git. Copie `src/config.example.js` para `src/config.js` e preencha com o seu endereço.
 
 O servidor fica em `server/`. É um Cloudflare Worker em que cada código de sala vira um Durable Object. Ele só repassa mensagens curtas entre quem está na sala, avisa quando alguém sai e responde a pings com a hora dele. Assim os relógios dos dois PCs batem, mesmo que o Windows de cada um esteja com alguns segundos de diferença.
 
@@ -56,7 +56,7 @@ npx wrangler login      # abre o navegador para entrar na conta da Cloudflare
 npx wrangler deploy     # mostra o endereço, algo como https://syncreact.<sua-conta>.workers.dev
 ```
 
-Depois, coloque esse endereço em `DEFAULT_SERVER` no `src/background.js` e recarregue a extensão. Também dá para colar no popup, em Ajustes → Servidor.
+Depois, coloque esse endereço (com `wss://`) em `src/config.js` e recarregue a extensão. Também dá para colar no popup, em Ajustes → Servidor.
 
 Rodar localmente para testes: `cd server && npm run dev` (porta 8787, sem conta).
 
