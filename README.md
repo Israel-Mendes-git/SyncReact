@@ -35,19 +35,40 @@ O status aparece no canto do player: verde quando está sincronizado, amarelo qu
 - Seek e mudança de velocidade só contam quando vêm de clique ou tecla. Assim, um reset interno do player do YouTube não arrasta a sala para o começo.
 - Autoplay do YouTube logo ao abrir um vídeo não conta como play de ninguém.
 
-## Estado atual
+## Servidor
 
-- **Transporte: só local.** As salas só funcionam entre abas do mesmo navegador. Serve para testar a sincronia. Para funcionar entre dois PCs falta escolher o servidor (Cloudflare Worker, conexão direta via PeerJS, Tailscale Funnel no PC…). A troca é só em `createLocalTransport` no `src/background.js`, o resto não muda.
+O servidor fica em `server/`. É um Cloudflare Worker em que cada código de sala vira um Durable Object. Ele só repassa mensagens curtas entre quem está na sala, avisa quando alguém sai e responde a pings com a hora dele. Assim os relógios dos dois PCs batem, mesmo que o Windows de cada um esteja com alguns segundos de diferença.
+
+Publicar (uma vez):
+
+```
+cd server
+npm install
+npx wrangler login      # abre o navegador para entrar na conta da Cloudflare
+npx wrangler deploy     # mostra o endereço, algo como https://syncreact.<sua-conta>.workers.dev
+```
+
+Depois, coloque esse endereço em `DEFAULT_SERVER` no `src/background.js` e recarregue a extensão. Também dá para colar no popup, em Ajustes → Servidor.
+
+Rodar localmente para testes: `cd server && npm run dev` (porta 8787, sem conta).
+
+Para o uso de vocês dois, o plano grátis da Cloudflare sobra.
+
+Em Ajustes → Servidor, o valor `local` volta ao modo de teste, que sincroniza só abas do mesmo navegador.
+
+## Limites
+
 - Só YouTube, página `/watch` (Shorts e miniplayer ficam de fora).
 
 ## Teste automático
 
 ```
 npm install
-npm test
+npm test                                        # transporte local
+SERVER=ws://127.0.0.1:8787 node tools/test-sync.mjs   # pelo servidor (rode "npm run dev" em server/ antes)
 ```
 
-Abre um Chromium sem janela com a extensão, duas abas do YouTube na mesma sala, e mede a diferença entre elas em: entrar na sala, play, seek, deriva, pause, contagem, anúncio simulado e troca de vídeo. As capturas ficam em `tools/out/`, junto com o registro de eventos das duas abas quando algum cenário falha.
+Abre um Chromium sem janela com a extensão e duas abas do YouTube na mesma sala. Com `SERVER`, abre dois navegadores separados, como dois PCs, e testa também a queda e a volta da conexão. Mede a diferença entre elas em: entrar na sala, play, seek, deriva, pause, contagem, anúncio simulado e troca de vídeo. As capturas ficam em `tools/out/`, junto com o registro de eventos das duas abas quando algum cenário falha.
 
 Limite do teste: no Chromium sem janela, o YouTube não carrega depois de um pulo longo (para 30% do vídeo, por exemplo), nem sem a extensão. Por isso o teste de seek volta só 10 s.
 
@@ -58,6 +79,7 @@ O teste usa o Chromium do Playwright em `%LOCALAPPDATA%\ms-playwright\chromium-1
 - `manifest.json`: Manifest V3.
 - `src/content.js`: roda na página do YouTube; controla o vídeo, a linha do tempo, as esperas e o status no player.
 - `src/page-bridge.js`: roda no contexto da própria página e faz play, pause e seek pela API do player do YouTube. Mexer no `<video>` por baixo do player faz o YouTube achar que travou e recarregar o vídeo do zero.
-- `src/background.js`: guarda quem está em cada sala e repassa as mensagens (transporte).
+- `src/background.js`: guarda quem está em cada sala e repassa as mensagens por WebSocket até o servidor (ou entre abas, no modo local), com reconexão e acerto de relógio.
+- `server/`: o Worker da Cloudflare.
 - `popup/`: janela do ícone.
 - `tools/gen-icons.mjs`: gera os ícones; `tools/test-sync.mjs`: teste de ponta a ponta.
