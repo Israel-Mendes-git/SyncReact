@@ -6,8 +6,12 @@
 
 'use strict';
 
-// Endereço do Worker publicado. Pode ser trocado no popup (Ajustes → Servidor).
-const DEFAULT_SERVER = '';
+// Endereço do Worker publicado: vem de src/config.js (fora do git; modelo em src/config.example.js).
+// Sem ele, a extensão começa no modo local. Também dá para trocar no popup (Ajustes → Servidor).
+try {
+  importScripts('config.js');
+} catch (_) {}
+const DEFAULT_SERVER = self.SYNCREACT_SERVER || '';
 
 const ports = new Map();      // tabId -> Port do content script
 const lastStatus = new Map(); // tabId -> último status enviado pela aba
