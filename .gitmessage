@@ -1,0 +1,10 @@
+
+# tipo(escopo): resumo em até 72 caracteres, sem ponto final
+#
+# tipos: feat fix refactor perf test docs style chore build ci revert
+# escopos: extensao popup servidor icones (opcional)
+#
+# Corpo opcional, depois de uma linha em branco: o porquê da mudança.
+# Rodapé opcional: BREAKING CHANGE: ...   Refs: #12
+#
+# Ex.: fix(extensao): aviso de espera sai antes do congelamento da sala

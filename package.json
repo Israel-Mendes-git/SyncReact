@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks && git config commit.template .gitmessage",
     "icons": "node tools/gen-icons.mjs",
     "test": "node tools/test-sync.mjs"
   },
