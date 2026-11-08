@@ -5,7 +5,8 @@
   "scripts": {
     "prepare": "git config core.hooksPath .githooks && git config commit.template .gitmessage",
     "icons": "node tools/gen-icons.mjs",
-    "test": "node tools/test-sync.mjs"
+    "test": "node tools/test-sync.mjs",
+    "pack": "node -e \"const v=require('./manifest.json').version;require('fs').mkdirSync('dist',{recursive:true});require('child_process').execSync('git archive --format=zip --prefix=SyncReact/ -o dist/SyncReact-v'+v+'.zip HEAD manifest.json src popup icons',{stdio:'inherit'});console.log('dist/SyncReact-v'+v+'.zip')\""
   },
   "devDependencies": {
     "playwright-core": "^1.65.0"

@@ -3,3 +3,4 @@ tools/out/
 tools/out-log.txt
 tools/wrangler-dev.log
 src/config.js
+dist/
