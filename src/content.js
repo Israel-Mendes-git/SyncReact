@@ -35,6 +35,8 @@
   let port = null;
   let member = null;           // { room, peerId }
   let transportName = 'local';
+  let netStatus = null;
+  let netOpenAt = 0;        // 'connecting' | 'open' | 'closed' | 'error' (só no modo servidor)
   let clockOffset = 0;
   let settings = { name: '', autoFollow: true, offsetMs: 0, overlay: true };
 
@@ -282,7 +284,9 @@
     if (wasAd && !ad) quietUntil = Date.now() + 1200; // o YouTube mexe no vídeo quando o anúncio acaba
     wasAd = ad;
 
-    if (!state && vid && video && Date.now() - joinedAt > 1500) {
+    // ninguém respondeu ao hello em 1,5 s (contando da conexão aberta, no modo servidor)
+    const listeningSince = transportName === 'servidor' ? (netStatus === 'open' ? Math.max(joinedAt, netOpenAt) : 0) : joinedAt;
+    if (!state && vid && video && listeningSince && Date.now() - listeningSince > 1500) {
       // ninguém respondeu: esta aba inaugura a sala com o que está tocando
       issueState({ videoId: vid, playing: !video.paused, position: video.currentTime, rate: video.playbackRate, at: now() });
     }
@@ -614,6 +618,18 @@
       case 'clock':
         clockOffset = msg.offset || 0;
         break;
+      case 'net': {
+        const was = netStatus;
+        netStatus = msg.status;
+        if (netStatus === 'open' && was !== 'open') netOpenAt = Date.now();
+        // conectou ou reconectou: pede o estado da sala de novo
+        if (member && netStatus === 'open' && was !== 'open') {
+          sendRoom({ type: 'hello' });
+          sendReport();
+        }
+        renderOverlay();
+        break;
+      }
       case 'room':
         onRoomMessage(msg.msg);
         break;
@@ -672,7 +688,10 @@
     const others = Object.values(peers).filter((p) => p.report);
     const otherHolds = Object.entries(holds).filter(([id]) => id !== myId());
 
-    if (autoplayBlocked) {
+    if (transportName === 'servidor' && netStatus !== 'open') {
+      color = '#ea4335';
+      msg = netStatus === 'connecting' || !netStatus ? 'Conectando ao servidor…' : 'Sem conexão com o servidor · tentando de novo';
+    } else if (autoplayBlocked) {
       color = '#ea4335';
       msg = 'Clique no vídeo uma vez para liberar o play automático';
     } else if (state && state.videoId !== vid) {
