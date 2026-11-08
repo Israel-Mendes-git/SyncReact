@@ -87,10 +87,10 @@ function netOpen(tabId, conn) {
   conn.ws = ws;
   ws.onopen = () => {
     conn.retry = 0;
-    conn.status = 'open';
-    // rajada de pings para acertar o relógio logo; depois um a cada 10 s
-    for (let i = 0; i < 6; i++) conn.timers.push(setTimeout(() => ping(conn), i * 150));
-    netNotify(tabId, conn);
+    // só avisa a aba que conectou depois do primeiro pong: antes disso o relógio ainda não está
+    // acertado, e um comando dado nesse instante sairia com a hora errada
+    burst(conn);
+    conn.timers.push(setTimeout(() => markOpen(tabId, conn), 2000));
   };
   ws.onmessage = (e) => {
     let msg;
@@ -115,6 +115,18 @@ function netOpen(tabId, conn) {
   ws.onerror = () => {};
 }
 
+function markOpen(tabId, conn) {
+  if (conn.status === 'open' || !conn.ws || conn.ws.readyState !== 1) return;
+  conn.status = 'open';
+  toPort(tabId, { type: 'clock', offset: conn.offset });
+  netNotify(tabId, conn);
+}
+
+// rajada de pings para acertar o relógio logo; depois um a cada 10 s
+function burst(conn) {
+  for (let i = 0; i < 6; i++) conn.timers.push(setTimeout(() => ping(conn), i * 150));
+}
+
 function ping(conn) {
   if (conn.ws && conn.ws.readyState === 1) conn.ws.send(JSON.stringify({ type: '_ping', t0: Date.now() }));
 }
@@ -132,6 +144,7 @@ function onPong(tabId, conn, msg) {
     conn.offset = Math.round(best.offset);
     toPort(tabId, { type: 'clock', offset: conn.offset });
   }
+  markOpen(tabId, conn);
 }
 
 function netNotify(tabId, conn) {
