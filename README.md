@@ -68,20 +68,6 @@ Em Ajustes → Servidor, o valor `local` volta ao modo de teste, que sincroniza 
 
 - Só YouTube, página `/watch` (Shorts e miniplayer ficam de fora).
 
-## Teste automático
-
-```
-npm install
-npm test                                        # transporte local
-SERVER=ws://127.0.0.1:8787 node tools/test-sync.mjs   # pelo servidor (rode "npm run dev" em server/ antes)
-```
-
-Abre um Chromium sem janela com a extensão e duas abas do YouTube na mesma sala. Com `SERVER`, abre dois navegadores separados, como dois PCs, e testa também a queda e a volta da conexão. Mede a diferença entre elas em: entrar na sala, play, seek, deriva, pause, contagem, anúncio simulado e troca de vídeo. As capturas ficam em `tools/out/`, junto com o registro de eventos das duas abas quando algum cenário falha.
-
-Limite do teste: no Chromium sem janela, o YouTube não carrega depois de um pulo longo (para 30% do vídeo, por exemplo), nem sem a extensão. Por isso o teste de seek volta só 10 s.
-
-O teste usa o Chromium do Playwright em `%LOCALAPPDATA%\ms-playwright\chromium-1243`. Para usar outro, defina a variável `CHROMIUM` com o caminho do executável.
-
 ## Arquivos
 
 - `manifest.json`: Manifest V3.
