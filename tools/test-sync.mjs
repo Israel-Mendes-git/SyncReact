@@ -155,7 +155,8 @@ try {
     const a = await netOf(A.sw);
     const b = await netOf(B.sw);
     await check('os dois conectados ao servidor, relógio acertado',
-      a && b && a.status === 'open' && b.status === 'open' && Math.abs(a.offset) < 50 && Math.abs(b.offset) < 50,
+      // mesmo PC: as duas correções de relógio têm que bater entre si (o valor em si é o desvio do relógio do PC)
+      a && b && a.status === 'open' && b.status === 'open' && Math.abs(a.offset - b.offset) < 40,
       `A=${JSON.stringify(a)} B=${JSON.stringify(b)}`);
   }
 
