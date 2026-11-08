@@ -69,9 +69,16 @@ function checkName() {
 }
 
 async function joinRoom() {
-  const code = $('code').value.trim().toUpperCase();
+  // aceita o código colado com espaço, traço ou texto em volta ("Sala ABC123"): fica só o código
+  const raw = $('code').value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const code = raw.length > 6 ? raw.slice(-6) : raw;
   if (!checkName()) return;
-  if (code.length < 4) { $('code').focus(); return; }
+  if (code.length !== 6) {
+    $('code').value = '';
+    $('code').placeholder = 'O código tem 6 letras/números';
+    $('code').focus();
+    return;
+  }
   await ask('join', { room: code });
   refresh();
 }
