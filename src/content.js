@@ -527,7 +527,9 @@
     if (!video || !r || r.pos == null || r.ad || isAd() || !state) return null;
     if (r.videoId !== currentVideoId() || !r.playing || video.paused) return null;
     const exp = r.pos + ((now() - r.at) / 1000) * r.rate;
-    return Math.round((video.currentTime - exp) * 1000);
+    // a compensação de atraso de cada um é proposital: não conta como fora de sincronia
+    const intended = (settings.offsetMs || 0) - (r.offsetMs || 0);
+    return Math.round((video.currentTime - exp) * 1000 - intended);
   }
 
   function sendReport() {
@@ -543,6 +545,7 @@
       at: now(),
       hold: myHold,
       ad: isAd(),
+      offsetMs: settings.offsetMs || 0,
     });
     lastReportAt = Date.now();
     post({ type: 'status', status: buildStatus() });
