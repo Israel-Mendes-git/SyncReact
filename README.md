@@ -35,7 +35,15 @@ O status aparece no canto do player: verde quando está sincronizado, amarelo qu
 - Seek e mudança de velocidade só contam quando vêm de clique ou tecla. Assim, um reset interno do player do YouTube não arrasta a sala para o começo.
 - Autoplay do YouTube logo ao abrir um vídeo não conta como play de ninguém.
 
+## Mandar para o amigo
+
+O arquivo `SyncReact-extensao.zip` traz só o que a extensão precisa: `manifest.json`, `src/`, `popup/` e `icons/`. Ele descompacta numa pasta fixa (a extensão para de funcionar se a pasta for apagada) e instala igual: `opera://extensions` → Modo de desenvolvedor → Carregar sem compactação.
+
+Para gerar o zip de novo depois de mudanças, compacte essas quatro coisas dentro de uma pasta `SyncReact`.
+
 ## Servidor
+
+Coloque o endereço do seu Worker em `DEFAULT_SERVER` no `src/background.js`.
 
 O servidor fica em `server/`. É um Cloudflare Worker em que cada código de sala vira um Durable Object. Ele só repassa mensagens curtas entre quem está na sala, avisa quando alguém sai e responde a pings com a hora dele. Assim os relógios dos dois PCs batem, mesmo que o Windows de cada um esteja com alguns segundos de diferença.
 
