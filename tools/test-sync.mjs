@@ -282,6 +282,39 @@ try {
   await sleep(1500);
   await popup.screenshot({ path: path.join(OUT, 'popup.png') });
   await pageA.screenshot({ path: path.join(OUT, 'a-final.png') });
+  await popup.close();
+
+  if (SERVER) {
+    // o Windows acerta o relógio no meio da sessão: a hora do PC salta 3 s e a correção tem que acompanhar
+    const before = (await netOf(B.sw)).offset;
+    await B.sw.evaluate(() => { const real = Date.now; self.__realNow = real; Date.now = () => real() + 3000; });
+    let after = before;
+    const t0 = Date.now();
+    while (Date.now() - t0 < 6000) {
+      await sleep(250);
+      after = (await netOf(B.sw)).offset;
+      if (Math.abs(after - (before - 3000)) < 80) break;
+    }
+    await B.sw.evaluate(() => { Date.now = self.__realNow; });
+    await check('salto de 3 s no relógio do PC: correção acompanha',
+      Math.abs(after - (before - 3000)) < 80, `antes=${before} depois=${after} em ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+    await sleep(2500);
+  }
+
+  // extensão recarregada (atualização) com a aba aberta: o script antigo tem que largar o vídeo
+  const wasPlaying = !(await sample(pageA)).paused;
+  await A.sw.evaluate(() => chrome.runtime.reload()).catch(() => {});
+  await sleep(3000);
+  const overlayGone = await pageA.evaluate(() => !document.querySelector('.syncreact-overlay'));
+  await pageA.locator('#movie_player').focus();
+  await pageA.keyboard.press('k');
+  await sleep(500);
+  const p1 = await sample(pageA);
+  await sleep(2500);
+  const p2 = await sample(pageA);
+  await check('extensão recarregada: script antigo larga o vídeo',
+    wasPlaying && overlayGone && p1.paused && p2.paused,
+    `tocava antes=${wasPlaying} overlay sumiu=${overlayGone} pausado=${p1.paused}/${p2.paused}`);
 } catch (err) {
   await check('execução sem erro', false, err.stack || String(err));
 } finally {
