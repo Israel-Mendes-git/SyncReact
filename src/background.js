@@ -147,6 +147,20 @@ function onPong(tabId, conn, msg) {
   markOpen(tabId, conn);
 }
 
+// O Windows acerta o relógio de vez em quando, e a hora do PC dá um salto. As medições antigas
+// passam a estar erradas: descarta e mede de novo (a hora monotônica não salta).
+let wallMinusMono = Date.now() - performance.now();
+setInterval(() => {
+  const d = Date.now() - performance.now();
+  if (Math.abs(d - wallMinusMono) > 150) {
+    for (const conn of sockets.values()) {
+      conn.samples = [];
+      burst(conn);
+    }
+  }
+  wallMinusMono = d;
+}, 1000);
+
 function netNotify(tabId, conn) {
   toPort(tabId, { type: 'net', status: conn.status });
 }
