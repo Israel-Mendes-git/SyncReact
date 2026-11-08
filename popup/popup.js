@@ -95,6 +95,9 @@ async function refresh() {
   if (r.member.server === 'local') {
     net.textContent = 'Só abas deste navegador (teste local)';
     net.style.setProperty('--c', '#9aa0a6');
+  } else if (r.net && r.net.status === 'full') {
+    net.textContent = 'Sala cheia (máximo 8 abas)';
+    net.style.setProperty('--c', '#ea4335');
   } else if (r.net && r.net.status === 'open') {
     net.textContent = 'Conectado ao servidor' + (r.net.rtt != null ? ' · ping ' + r.net.rtt + ' ms' : '');
     net.style.setProperty('--c', '#34a853');

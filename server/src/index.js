@@ -22,7 +22,12 @@ export class Room {
       return new Response('esperava WebSocket', { status: 426 });
     }
     if (this.ctx.getWebSockets().length >= MAX_PEERS) {
-      return new Response('sala cheia', { status: 429 });
+      // aceita e fecha com código próprio: o navegador não mostra o status HTTP de um WebSocket
+      // recusado, então sem isso a extensão ficaria tentando reconectar para sempre
+      const full = new WebSocketPair();
+      full[1].accept();
+      full[1].close(4001, 'sala cheia');
+      return new Response(null, { status: 101, webSocket: full[0] });
     }
     const url = new URL(request.url);
     const peer = (url.searchParams.get('peer') || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 16);

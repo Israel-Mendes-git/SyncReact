@@ -691,7 +691,10 @@
     const others = Object.values(peers).filter((p) => p.report);
     const otherHolds = Object.entries(holds).filter(([id]) => id !== myId());
 
-    if (transportName === 'servidor' && netStatus !== 'open') {
+    if (transportName === 'servidor' && netStatus === 'full') {
+      color = '#ea4335';
+      msg = 'Sala ' + member.room + ' está cheia (máximo 8)';
+    } else if (transportName === 'servidor' && netStatus !== 'open') {
       color = '#ea4335';
       msg = netStatus === 'connecting' || !netStatus ? 'Conectando ao servidor…' : 'Sem conexão com o servidor · tentando de novo';
     } else if (autoplayBlocked) {

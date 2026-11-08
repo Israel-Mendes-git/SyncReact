@@ -98,8 +98,14 @@ function netOpen(tabId, conn) {
     if (msg.type === '_pong') onPong(tabId, conn, msg);
     else deliver(tabId, msg);
   };
-  ws.onclose = () => {
+  ws.onclose = (e) => {
     if (conn.ws !== ws) return;
+    if (e.code === 4001) {
+      // sala cheia: tentar de novo não adianta
+      conn.status = 'full';
+      netNotify(tabId, conn);
+      return;
+    }
     conn.status = 'closed';
     netNotify(tabId, conn);
     if (conn.closed) return;
