@@ -70,6 +70,7 @@
   let followingTo = null;
   let autoplayBlocked = false;
   let lastPeerDiffMs = null;
+  const intervals = [];
 
   const now = () => Date.now() + clockOffset;
   const debugLog = [];
@@ -573,7 +574,10 @@
   }
 
   function connect() {
-    if (!chrome.runtime || !chrome.runtime.id) return; // extensão recarregada: este script morreu
+    if (!chrome.runtime || !chrome.runtime.id) {
+      teardown(); // extensão recarregada: este script ficou órfão
+      return;
+    }
     try {
       port = chrome.runtime.connect({ name: 'syncreact' });
     } catch (_) {
@@ -583,8 +587,27 @@
     port.onMessage.addListener(onBgMessage);
     port.onDisconnect.addListener(() => {
       port = null;
+      // extensão atualizada/recarregada: este script ficou órfão e não pode continuar mexendo no vídeo
+      if (!chrome.runtime || !chrome.runtime.id) {
+        teardown();
+        return;
+      }
       setTimeout(connect, 1000);
     });
+  }
+
+  function teardown() {
+    for (const id of intervals) clearInterval(id);
+    intervals.length = 0;
+    if (video) {
+      for (const ev of LOCAL_EVENTS) video.removeEventListener(ev, onLocalEvent);
+      if (appliedRate !== null) video.playbackRate = state ? state.rate : 1;
+    }
+    resetRoom();
+    member = null;
+    if (overlay) overlay.root.remove();
+    overlay = null;
+    window.__syncreact = false;
   }
 
   function resetRoom() {
@@ -762,8 +785,8 @@
   window.addEventListener('pagehide', () => sendRoom({ type: 'bye' }));
 
   connect();
-  setInterval(tick, TICK_MS);
-  setInterval(sendReport, REPORT_MS);
+  intervals.push(setInterval(tick, TICK_MS));
+  intervals.push(setInterval(sendReport, REPORT_MS));
   tick();
 
   // usado pelos testes automatizados
