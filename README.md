@@ -37,13 +37,13 @@ O status aparece no canto do player: verde quando está sincronizado, amarelo qu
 
 ## Mandar para o amigo
 
-O arquivo `SyncReact-extensao.zip` traz só o que a extensão precisa: `manifest.json`, `src/` (com o `config.js` preenchido), `popup/` e `icons/`. Ele descompacta numa pasta fixa (a extensão para de funcionar se a pasta for apagada) e instala igual: `opera://extensions` → Modo de desenvolvedor → Carregar sem compactação.
+O zip de cada release (`SyncReact-vX.Y.Z.zip`) traz só o que a extensão precisa: `manifest.json`, `src/` (com o `config.js` preenchido), `popup/` e `icons/`, e já sai apontando para o servidor. Ele descompacta numa pasta fixa (a extensão para de funcionar se a pasta for apagada) e instala igual: `opera://extensions` → Modo de desenvolvedor → Carregar sem compactação.
 
-Para gerar o zip de novo depois de mudanças, compacte essas quatro coisas dentro de uma pasta `SyncReact`.
+Para gerar o zip de novo depois de mudanças: `npm run pack`. Ele inclui o `src/config.js` quando o arquivo existe; sem ele, o zip sai no modo local.
 
 ## Servidor
 
-O endereço do servidor publicado fica em `src/config.js`, que não vai para o git. Copie `src/config.example.js` para `src/config.js` e preencha com o seu endereço.
+O endereço do servidor publicado fica em `src/config.js`, que não vai para o git (mas vai dentro do zip das releases). Para usar outro servidor, copie `src/config.example.js` para `src/config.js` e preencha com o seu endereço.
 
 O servidor fica em `server/`. É um Cloudflare Worker em que cada código de sala vira um Durable Object. Ele só repassa mensagens curtas entre quem está na sala, avisa quando alguém sai e responde a pings com a hora dele. Assim os relógios dos dois PCs batem, mesmo que o Windows de cada um esteja com alguns segundos de diferença.
 
