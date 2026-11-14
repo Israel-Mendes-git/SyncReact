@@ -18,6 +18,7 @@ async function init() {
     : await chrome.tabs.query({ active: true, currentWindow: true });
   const isYouTube = tab && tab.url && /^https:\/\/www\.youtube\.com\//.test(tab.url);
   if (!isYouTube) {
+    showMode(await ask('status'));
     $('not-youtube').hidden = false;
     return;
   }
@@ -87,11 +88,18 @@ function showOffset(v) {
   $('offset-label').textContent = (v > 0 ? '+' : '') + v + ' ms';
 }
 
-async function refresh() {
-  const r = await ask('status');
+// etiqueta do cabeçalho: vale também fora do YouTube (antes ficava o texto fixo do HTML)
+function showMode(r) {
   if (!r) return;
   const mode = r.member ? r.member.server : r.server;
   $('mode').textContent = mode === 'local' ? 'teste local' : 'online';
+  $('mode').hidden = false;
+}
+
+async function refresh() {
+  const r = await ask('status');
+  if (!r) return;
+  showMode(r);
   if (!$('server').value && document.activeElement !== $('server')) $('server').placeholder = r.defaultServer || 'local';
   const inRoom = !!r.member;
   $('lobby').hidden = inRoom;
